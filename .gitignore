@@ -1,0 +1,18 @@
+# Environment variables (CRITICAL: DO NOT COMMIT)
+.env
+
+# Mac OS system files
+.DS_Store
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Large data files (Optional, to avoid GitHub size limits)
+*.jsonl
+
+# Note: If you also want to ignore CSV files, remove the '#' below
+# *.csv
