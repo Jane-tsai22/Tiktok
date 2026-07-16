@@ -4,7 +4,7 @@
 ## 📌 Project Overview
 This project provides an automated tool to collect TikTok data from Belgian politicians, with a focus on the seven main Flemish parties (PVDA, Groen, Vooruit, CD&V, Open VLD, N-VA, Vlaams Belang). 
 
-By combining **RapidAPI** and **Apify**, this scraper bypasses common anti-bot blocks. It accurately collects video metadata (views, likes, post dates), captions, and comments within specific timeframes. This creates a high-quality, multilingual dataset for Natural Language Processing (NLP), sentiment analysis, and topic modeling.
+ This scraper collects video metadata (views, likes, post dates), captions, and comments within specific timeframes. This creates a high-quality, multilingual dataset for Natural Language Processing (NLP), sentiment analysis, and topic modeling.
 
 ## 🎯 Key Features
 * **Auto-Grouping:** Reads an Excel list of politicians, filters them, and automatically groups them by political party for easier scraping.
