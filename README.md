@@ -1,51 +1,55 @@
 # 🇧🇪 Belgian Politicians TikTok Scraper & Corpus Builder
 
-
 ## 📌 Project Overview
-This project provides an automated tool to collect TikTok data from Belgian politicians, with a focus on the seven main Flemish parties (PVDA, Groen, Vooruit, CD&V, Open VLD, N-VA, Vlaams Belang). 
+This project provides an automated pipeline to collect TikTok video data, audience comments, and speech transcriptions from Belgian politicians, focusing on the seven main Flemish parties (PVDA, Groen, Vooruit, CD&V, Open VLD, N-VA, Vlaams Belang). 
 
- This scraper collects video metadata (views, likes, post dates), captions, and comments within specific timeframes. This creates a high-quality, multilingual dataset for Natural Language Processing (NLP), sentiment analysis, and topic modeling.
+The tool collects video metadata (views, likes, post dates), captions, audio transcripts, and audience comments within specific timeframes. 
 
 ## 🎯 Key Features
-* **Auto-Grouping:** Reads an Excel list of politicians, filters them, and automatically groups them by political party for easier scraping.
+* **Auto-Grouping:** Reads a list of politicians, filters them, and automatically groups them by political party for streamlined batch scraping.
 * **Smart Date Filtering:**
-    * Allows you to set a `start_date` and `end_date`.
-    * Optimizes API costs: Because TikTok videos are sorted chronologically, the script automatically stops searching an account once it hits videos older than your start date, saving API tokens.
+    * Allows custom `start_date` and `end_date` boundary settings.
+    * **Cost Optimization:** Because TikTok profiles display videos chronologically, the script automatically stops fetching once it reaches videos older than your target `start_date`, saving API quota.
 * **Dual Scraping Strategy:**
-    1. **Official Accounts:** Uses the TikTok API to scrape all historical videos from a politician's profile.
-    2. **Keyword Search:** Uses keyword tracking for politicians who do not have an official account.
-* **Clean Excel Output:** Exports data directly to clean, formatted Excel (`.xlsx`) files. This prevents the formatting errors and broken emojis commonly seen in CSV files.
-* **Advanced Transcription (Whisper STT):** Avoids unreliable cloud-based auto-captions. Instead, it uses a local Python workflow (`yt-dlp` + `OpenAI Whisper large-v3`) to handle background music and the bilingual nature (Dutch/French) of Belgian politics.
+    1. **Official Accounts:** Scrapes all historical videos from politicians' profile URLs.
+    2. **Keyword Search:** Tracks mentions and posts for politicians without an official account.
+* **Deep Comment Extraction:** Leverages RapidAPI (`tiktok-video-feature-summary`) with pagination logic and incremental saving (resume from breakpoint) to collect complete comment sections for every video.
+* **Cloud-Grade Speech-to-Text (Google Cloud STT V2):** 
+    * Replaces unreliable auto-captions with **Google Cloud Speech-to-Text V2**.
+    * Features **Audio Chunking Pipeline**: Automatically converts video audio via `yt-dlp` / `ffmpeg` and chunks long audio files to optimize API processing and maintain high transcription accuracy across Belgian Dutch (Flemish) and French dialects.
+* **Clean Excel Output:** Formats and exports data into Excel (`.xlsx`) files, preventing formatting errors, corrupted line breaks, and broken emojis.
 
 ## 🛠️ Tech Stack
 * **Language:** Python 3.8+
-* **Data Processing:** `pandas`, `datetime`, `csv`, `os`, `glob`
+* **Data Processing & Analytics:** `pandas`, `openpyxl`, `datetime`, `os`, `glob`
 * **API & Scraping:**
-    * `requests` (for HTTP requests)
-    * `python-dotenv` (for secure API key management)
-    * [RapidAPI](https://rapidapi.com/) (using `tiktok-api6`)
-    * [Apify](https://apify.com/) (using `API Dojo / Tiktok Profile Scraper` to get video URLs cheaply)
-* **Audio Transcription (Optional):** `yt-dlp` (to extract audio), `openai-whisper` (for highly accurate, multi-language transcription)
+    * `requests` (for HTTP API interactions)
+    * `python-dotenv` (for secure environment variable management)
+    * **Video & Comment API:** [RapidAPI](https://rapidapi.com/) (`tiktok-video-feature-summary.p.rapidapi.com`)
+* **Audio Extraction & Speech Recognition:**
+    * `yt-dlp` & `ffmpeg` (Audio extraction, formatting, and time-based chunking)
+    * **Google Cloud Speech-to-Text API (V2)** (Enterprise-grade multilingual transcription)
 
 ## 📁 Workflow
 
 ### Phase 1: Data Preparation
-The script reads your master Excel list of politicians. It uses Pandas `groupby` to split the list and create separate Excel files for each political party (e.g., `Vooruit_with_account.xlsx`).
+The script reads your master Excel file containing politician profiles. It uses Pandas to split the list by political party and generates standalone input files (e.g., `Vooruit_with_account.xlsx`).
 
-### Phase 2: Batch Scraping
-Using the `glob` module, the script automatically finds all the party Excel files in your folder and scrapes them one by one. 
-The scraper will:
-1. Check if the video's publish date falls within your target range (e.g., `2019-05-27` to `2024-06-09`).
-2. Handle page navigation (pagination) automatically.
-3. Manage API rate limits (HTTP 429 errors) with built-in pause and retry limits.
-4. Save the `video_id`, `url`, `caption`, `views`, and `likes` into a clean output file like `[PartyName]_official.xlsx`.
+### Phase 2: Batch Video Scraping
+Using the `glob` module, the script iterates through each party's spreadsheet to collect post data:
+1. Filters posts strictly within the defined date window (e.g., `2019-05-27` to `2024-06-09`).
+2. Handles pagination automatically via cursors.
+3. Implements rate-limiting (`time.sleep`) and error handling to manage HTTP limits.
+4. Outputs raw metadata (`video_id`, `url`, `caption`, `views`, `likes`) into `[PartyName]_official.xlsx`.
 
-### Phase 3: Deep Data Extraction (Recommended)
-1. **Comments:** Feed the video URLs collected in Phase 2 into Apify's `TikTok Comments Scraper` to gather audience reactions.
-2. **Transcription:** Pass the video URLs to `yt-dlp` to download the audio. Then, use OpenAI's `Whisper large-v3` to transcribe the speech. *Tip: Provide a custom `initial_prompt` with Belgian political terms to improve accuracy for local dialects and names.*
+### Phase 3: Deep Data Extraction & NLP Corpus Building
+1. **Comment Scraping:** 
+   Feeds the collected video URLs into RapidAPI (`tiktok-video-feature-summary`). Runs paginated requests to harvest user comments, reply counts, and like counts, exporting them to `[PartyName]_official_comments.xlsx`.
+2. **Audio Chunking & Transcription (Google Cloud STT V2):** 
+   Extracts audio streams from videos using `yt-dlp`. Long audio files are dynamically split into smaller chunks, sent to **Google Cloud Speech-to-Text V2**, and stitched back together to build precise speech transcripts for linguistic analysis.
 
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
 ```bash
-pip install pandas requests python-dotenv openpyxl
+pip install pandas requests python-dotenv openpyxl google-cloud-speech
